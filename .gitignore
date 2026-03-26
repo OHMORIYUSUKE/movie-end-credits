@@ -5,3 +5,17 @@ dist
 
 # Ignore the output video from Git but not videos you import into src/.
 out
+
+# 写真をGitで無視するが、写真フォルダ自体は残す
+public/photos/*
+!public/photos/.gitkeep
+
+# 音声をGitで無視するが、写真フォルダ自体は残す
+public/music/*
+!public/music/.gitkeep
+
+# CSVをGitで無視するが、写真フォルダ自体は残す
+public/credit/*
+!public/credit/.gitkeep
+*.mp3
+*.csv
