@@ -17,5 +17,10 @@ public/music/*
 # CSVをGitで無視するが、写真フォルダ自体は残す
 public/credit/*
 !public/credit/.gitkeep
+
+# ロゴをGitで無視する
+public/logo/*
+!public/logo/.gitkeep
+
 *.mp3
 *.csv
