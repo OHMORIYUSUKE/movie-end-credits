@@ -28,7 +28,6 @@
     "lint": "eslint src && tsc",
     "update-duration": "node scripts/update-duration.js",
     "update-credits": "node scripts/update-credits.js",
-    "update-photos": "node scripts/update-photos.js",
     "update-participants": "node scripts/update-participants.js"
   },
   "sideEffects": [

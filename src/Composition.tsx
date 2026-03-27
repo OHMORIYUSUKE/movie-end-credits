@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   AbsoluteFill,
   Audio,
@@ -8,12 +8,20 @@ import {
   useCurrentFrame,
   useVideoConfig,
   Sequence,
+  delayRender,
+  continueRender,
 } from "remotion";
-import photosList from "./photos.json";
 import credits from "./credits.json";
 import participants from "./participants.json";
+import videoConfig from "./video-config.json";
 
-const photos = (photosList as string[]).map(name => staticFile(`photos/${name}`));
+interface PhotoData {
+  id: string;
+  name: string;
+  timestamp: number;
+  featured: boolean;
+  // base64 は廃止し、URLで取得するように変更
+}
 
 type CreditItem = 
   | { type: 'staff'; role: string; name: string }
@@ -47,12 +55,37 @@ const creditItems: CreditItem[] = [
 ];
 
 export const MyComposition: React.FC = () => {
+  const [photos, setPhotos] = useState<PhotoData[]>([]);
+  const [handle] = useState(() => delayRender());
   const frame = useCurrentFrame();
   const { height, durationInFrames, fps } = useVideoConfig();
 
-  const DELAY_FRAMES = 0.5 * fps; // 0.5 second delay
-  const END_DELAY_FRAMES = 2 * fps; // 2 seconds delay at the end
+  const DELAY_FRAMES = videoConfig.startDelayFrames ?? (0.5 * fps);
+  const END_DELAY_FRAMES = videoConfig.endDelayFrames ?? (2 * fps);
+  const SECONDS_PER_PHOTO = videoConfig.secondsPerPhoto || 4;
   const activeDuration = durationInFrames - DELAY_FRAMES - END_DELAY_FRAMES;
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/photos")
+      .then((res) => res.json())
+      .then((allPhotos: PhotoData[]) => {
+        // --- 📸 動画の長さに合わせて枚数を計算 ---
+        const framesPerPhoto = SECONDS_PER_PHOTO * fps;
+        const maxPhotos = Math.floor(activeDuration / framesPerPhoto);
+
+        // Use photos that have been explicitly selected in the admin dashboard
+        const finalPhotos = allPhotos
+          .filter(p => p.selected)
+          .sort((a, b) => a.timestamp - b.timestamp);
+        
+        setPhotos(finalPhotos);
+        continueRender(handle);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch photos:", err);
+        continueRender(handle);
+      });
+  }, [handle, fps, activeDuration]);
 
   // Scroll logic: calculate total height
   const getItemHeight = (item: CreditItem) => {
@@ -82,25 +115,36 @@ export const MyComposition: React.FC = () => {
   }
 
   // Photo rotation: switch photo evenly across active duration
-  const photoFrameDuration = activeDuration / photos.length;
-  const activeFrame = Math.max(0, frame - DELAY_FRAMES);
-  const photoIndex = Math.min(
-    photos.length - 1,
-    Math.floor(activeFrame / photoFrameDuration)
-  );
-  const currentPhoto = photos[photoIndex];
+  const currentPhoto = useMemo(() => {
+    if (photos.length === 0) return null;
+    const photoFrameDuration = activeDuration / photos.length;
+    const activeFrame = Math.max(0, frame - DELAY_FRAMES);
+    const photoIndex = Math.min(
+      photos.length - 1,
+      Math.floor(activeFrame / photoFrameDuration)
+    );
+    return photos[photoIndex];
+  }, [photos, activeDuration, frame, DELAY_FRAMES]);
 
   // Photo fade in/out:
-  const localFrame = activeFrame % photoFrameDuration;
-  const fadeDuration = 15; // 0.5 seconds
-  const photoOpacity = frame < DELAY_FRAMES || frame > durationInFrames - END_DELAY_FRAMES
-    ? 0
-    : interpolate(
-        localFrame,
-        [0, fadeDuration, photoFrameDuration - fadeDuration, photoFrameDuration],
-        [0, 1, 1, 0],
-        { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-      );
+  const photoOpacity = useMemo(() => {
+    if (photos.length === 0) return 0;
+    const photoFrameDuration = activeDuration / photos.length;
+    const activeFrame = Math.max(0, frame - DELAY_FRAMES);
+    const localFrame = activeFrame % photoFrameDuration;
+    const fadeDuration = 15; // 0.5 seconds
+    
+    if (frame < DELAY_FRAMES || frame > durationInFrames - END_DELAY_FRAMES) {
+      return 0;
+    }
+    
+    return interpolate(
+      localFrame,
+      [0, fadeDuration, photoFrameDuration - fadeDuration, photoFrameDuration],
+      [0, 1, 1, 0],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+    );
+  }, [photos.length, activeDuration, frame, DELAY_FRAMES, durationInFrames, END_DELAY_FRAMES]);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "black", color: "white", fontFamily: "sans-serif" }}>
@@ -120,17 +164,19 @@ export const MyComposition: React.FC = () => {
           padding: "40px",
         }}
       >
-        <Img
-          src={currentPhoto}
-          style={{
-            width: "80%",
-            height: "auto",
-            maxHeight: "80%",
-            objectFit: "cover",
-            opacity: photoOpacity,
-            boxShadow: "0 0 20px rgba(255, 255, 255, 0.2)",
-          }}
-        />
+        {currentPhoto && (
+          <Img
+            src={`http://localhost:8000/api/photo_data?timestamp=${currentPhoto.timestamp}&id=${currentPhoto.id}`}
+            style={{
+              width: "80%",
+              height: "auto",
+              maxHeight: "80%",
+              objectFit: "cover",
+              opacity: photoOpacity,
+              boxShadow: "0 0 20px rgba(255, 255, 255, 0.2)",
+            }}
+          />
+        )}
       </div>
 
       {/* Right side: Scrolling Staff Credits */}

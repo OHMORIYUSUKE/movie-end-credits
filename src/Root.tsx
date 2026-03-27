@@ -1,6 +1,7 @@
 import "./index.css";
 import { Composition } from "remotion";
 import { MyComposition } from "./Composition";
+import videoConfig from "./video-config.json";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -8,8 +9,8 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="EndCredits"
         component={MyComposition}
-        durationInFrames={6841} // (224s * 30fps) + (4s * 30fps) = 6720 + 120 = 6840
-        fps={30}
+        durationInFrames={videoConfig.durationInFrames}
+        fps={videoConfig.fps}
         width={1280}
         height={720}
       />

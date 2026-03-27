@@ -1,0 +1,26 @@
+{
+  "lock": false,
+  "tasks": {
+    "check": "deno cache main.ts",
+    "start": "deno run -A --unstable-kv --env dev.ts",
+    "build": "deno run -A dev.ts build",
+    "preview": "deno run -A --env main.ts"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "exclude": ["_fresh", ".git"],
+  "imports": {
+    "$fresh/": "https://deno.land/x/fresh@1.6.8/",
+    "preact": "https://esm.sh/preact@10.19.6",
+    "preact/": "https://esm.sh/preact@10.19.6/",
+    "@preact/signals": "https://esm.sh/@preact/signals@1.2.2",
+    "@preact/signals-core": "https://esm.sh/@preact/signals-core@1.5.1"
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact"
+  }
+}
