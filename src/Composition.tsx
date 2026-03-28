@@ -12,7 +12,6 @@ import {
   continueRender,
 } from "remotion";
 import credits from "./credits.json";
-import participants from "./participants.json";
 import videoConfig from "./video-config.json";
 
 interface PhotoData {
@@ -20,7 +19,7 @@ interface PhotoData {
   name: string;
   timestamp: number;
   featured: boolean;
-  // base64 は廃止し、URLで取得するように変更
+  selected?: boolean;
 }
 
 type CreditItem = 
@@ -33,21 +32,21 @@ type CreditItem =
   | { type: 'logo'; src: string; height: number };
 
 const creditItems: CreditItem[] = [
-  // Participants from CSV
-  ...Object.entries(participants as Record<string, string[]>).flatMap(([slotName, names]) => [
-    { type: 'header' as const, text: slotName },
+  // Participants from unified sections
+  ...((credits as any).sections || []).flatMap((section: any) => [
+    { type: 'header' as const, text: section.title },
     { type: 'spacer' as const, height: 50 },
-    ...names.map(name => ({ type: 'participant' as const, name })),
+    ...section.names.map((name: string) => ({ type: 'participant' as const, name })),
     { type: 'spacer' as const, height: 150 },
   ]),
 
   { type: 'spacer', height: 150 },
   { type: 'header', text: '個人スポンサー' },
   { type: 'spacer', height: 100 },
-  ...Object.entries(credits.sponsors).reverse().flatMap(([rank, names]) => [
+  ...Object.entries((credits as any).sponsors || {}).reverse().flatMap(([rank, names]: [string, any]) => [
     { type: 'rank' as const, text: rank, large: true },
     { type: 'spacer' as const, height: 40 }, // Space after rank
-    ...names.map(name => ({ type: 'sponsor' as const, name, large: true })),
+    ...(names as string[]).map(name => ({ type: 'sponsor' as const, name, large: true })),
     { type: 'spacer' as const, height: 100 },
   ]),
   { type: 'spacer', height: 200 },
@@ -69,10 +68,6 @@ export const MyComposition: React.FC = () => {
     fetch("http://localhost:8000/api/photos")
       .then((res) => res.json())
       .then((allPhotos: PhotoData[]) => {
-        // --- 📸 動画の長さに合わせて枚数を計算 ---
-        const framesPerPhoto = SECONDS_PER_PHOTO * fps;
-        const maxPhotos = Math.floor(activeDuration / framesPerPhoto);
-
         // Use photos that have been explicitly selected in the admin dashboard
         const finalPhotos = allPhotos
           .filter(p => p.selected)

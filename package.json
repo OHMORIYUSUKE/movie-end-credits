@@ -27,8 +27,7 @@
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
     "update-duration": "node scripts/update-duration.js",
-    "update-credits": "node scripts/update-credits.js",
-    "update-participants": "node scripts/update-participants.js"
+    "update-credits": "node scripts/update-credits.js"
   },
   "sideEffects": [
     "*.css"

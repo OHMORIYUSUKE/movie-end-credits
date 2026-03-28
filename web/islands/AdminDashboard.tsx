@@ -189,7 +189,12 @@ export default function AdminDashboard({
           </div>
           {isOverCapacity && (
             <div style={{ fontSize: "0.75rem", color: "#dc3545", marginTop: "8px", fontWeight: "bold" }}>
-              ⚠️ 最大枚数を超えています！
+              ⚠️ 最大枚数を超えています！（1枚あたりの表示時間が短くなりますが、すべて表示されます）
+            </div>
+          )}
+          {!isOverCapacity && selectedCount > 0 && selectedCount < videoPhotoCapacity && (
+            <div style={{ fontSize: "0.75rem", color: "#198754", marginTop: "8px", fontWeight: "bold" }}>
+              💡 画像が少ない場合、自動的に表示間隔を調整して尺に収めるようになっています。
             </div>
           )}
         </div>
