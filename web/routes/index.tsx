@@ -18,7 +18,7 @@ export const handler = {
     let videoPhotoCapacity = 0;
     let videoDurationSeconds = 0;
     try {
-      const configUrl = new URL("../video-config.json", import.meta.url);
+      const configUrl = new URL("../../src/generated/video-config.json", import.meta.url);
       const configContent = await Deno.readTextFile(configUrl);
       const config = JSON.parse(configContent);
       
@@ -51,7 +51,7 @@ export const handler = {
       } catch (_) { }
     }
     
-    const configUrl = new URL("../video-config.json", import.meta.url);
+    const configUrl = new URL("../../src/generated/video-config.json", import.meta.url);
     const configContent = await Deno.readTextFile(configUrl);
     const config = JSON.parse(configContent);
     const secondsPerPhoto = config.secondsPerPhoto || 4;

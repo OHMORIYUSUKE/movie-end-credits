@@ -26,8 +26,8 @@
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
-    "update-duration": "node scripts/update-duration.js",
-    "update-credits": "node scripts/update-credits.js"
+    "postinstall": "node scripts/update.js --setup-only",
+    "update": "node scripts/update.js"
   },
   "sideEffects": [
     "*.css"

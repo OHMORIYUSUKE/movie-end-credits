@@ -11,8 +11,8 @@ import {
   delayRender,
   continueRender,
 } from "remotion";
-import credits from "./credits.json";
-import videoConfig from "./video-config.json";
+import credits from "./generated/credits.json";
+import videoConfig from "./generated/video-config.json";
 
 interface PhotoData {
   id: string;

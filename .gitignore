@@ -18,5 +18,9 @@ public/credit/*
 public/logo/*
 !public/logo/.gitkeep
 
+# 生成された設定ファイルを無視するが、exampleは残す
+src/generated/*.json
+!src/generated/*.example.json
+
 *.mp3
 *.csv
