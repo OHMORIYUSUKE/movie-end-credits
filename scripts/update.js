@@ -13,9 +13,12 @@ const SPONSORS_CSV = path.join(__dirname, '../public/credit/event_384080_partici
 const FPS = 30;
 const BUFFER_SECONDS = 4;
 
+const http = require('http');
+
 // --- Helper Functions ---
 const fetchJSON = (url) => new Promise((resolve, reject) => {
-  https.get(url, (res) => {
+  const client = url.startsWith('https') ? https : http;
+  client.get(url, (res) => {
     let body = '';
     res.on('data', (chunk) => body += chunk);
     res.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
@@ -66,22 +69,72 @@ async function main() {
 
   console.log('--- Updating Video Metadata & Credits ---');
 
-  // 2. Update Duration Phase
+  // 2. Update Duration & Logo Phase
   try {
-    const output = execSync(`afinfo "${MP3_PATH}" | grep duration`).toString();
-    const durationSeconds = parseFloat(output.match(/duration: ([\d.]+)/)[1]);
-    const totalFrames = Math.ceil((durationSeconds + BUFFER_SECONDS) * FPS);
-    
+    let durationSeconds = 0;
+    try {
+      const allMusic = await fetchJSON('http://localhost:8000/api/music');
+      const activeMusic = allMusic.find(m => m.active) || allMusic[0];
+      if (activeMusic) {
+        if (activeMusic.duration) {
+          durationSeconds = activeMusic.duration;
+          console.log(`Fetched active music duration from API: ${durationSeconds.toFixed(2)}s (${activeMusic.name})`);
+        } else {
+          console.log(`Active music duration missing in API, measuring via download...`);
+          try {
+            execSync(`curl -s "http://localhost:8000/api/music?id=${activeMusic.id}" -o /tmp/active_music.mp3`);
+            const output = execSync(`afinfo /tmp/active_music.mp3 | grep duration`).toString();
+            durationSeconds = parseFloat(output.match(/duration: ([\d.]+)/)[1]);
+            console.log(`Measured downloaded music duration: ${durationSeconds.toFixed(2)}s`);
+          } catch (measureErr) {
+            console.warn('Failed to measure downloaded music:', measureErr.message);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch music from API, falling back to local file.');
+    }
+
+    if (durationSeconds === 0) {
+      try {
+        const output = execSync(`afinfo "${MP3_PATH}" | grep duration`).toString();
+        durationSeconds = parseFloat(output.match(/duration: ([\d.]+)/)[1]);
+        console.log(`Using local music duration: ${durationSeconds.toFixed(2)}s`);
+      } catch (err) {
+        console.warn(`Local music (end.mp3) missing or afinfo failed. Using default duration (180s).`);
+        durationSeconds = 180;
+      }
+    }
+
     const config = JSON.parse(fs.readFileSync(CONFIG_JSON_PATH, 'utf8'));
+    const startDelay = config.startDelayFrames ?? 15;
+    const endDelay = config.endDelayFrames ?? 60;
+    const totalFrames = Math.ceil((durationSeconds + (startDelay / FPS) + (endDelay / FPS)) * FPS);
+    
     config.durationInFrames = totalFrames;
     config.fps = FPS;
+    config.startDelayFrames = startDelay;
+    config.endDelayFrames = endDelay;
+
+    // Logo detection
+    const logoDir = path.join(__dirname, '../public/logo');
+    if (fs.existsSync(logoDir)) {
+      const logoFile = fs.readdirSync(logoDir).find(f => f.startsWith('logo.') && !f.endsWith('.gitkeep'));
+      if (logoFile) {
+        config.logoPath = `logo/${logoFile}`;
+        console.log(`Detected logo: ${logoFile}`);
+      }
+    }
+
     fs.writeFileSync(CONFIG_JSON_PATH, JSON.stringify(config, null, 2));
     console.log(`Updated video duration: ${durationSeconds.toFixed(2)}s (${totalFrames} frames)`);
 
     // Initialize photo selection if server is running
     const capacity = Math.floor((totalFrames - (config.startDelayFrames || 0) - (config.endDelayFrames || 0)) / FPS / (config.secondsPerPhoto || 4));
-    execSync(`curl -s -X POST -d "action=select-initial&capacity=${capacity}" http://localhost:8000/api/photos`).catch(() => {});
-  } catch (e) { console.warn('Duration update failed (afinfo might be missing).'); }
+    try {
+      execSync(`curl -s -X POST -d "action=select-initial&capacity=${capacity}" http://localhost:8000/api/photos`);
+    } catch (e) {}
+  } catch (e) { console.warn('Duration update failed:', e.message); }
 
   // 3. Update Credits Phase
   try {

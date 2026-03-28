@@ -3,5 +3,6 @@
   "fps": 30,
   "secondsPerPhoto": 4,
   "startDelayFrames": 15,
-  "endDelayFrames": 60
+  "endDelayFrames": 60,
+  "logoPath": "logo/logo.svg"
 }

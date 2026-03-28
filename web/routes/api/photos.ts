@@ -15,7 +15,10 @@ export const handler: Handlers = {
       
       if (!isAdmin && !isLocalhost) {
         return new Response(JSON.stringify([]), {
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
         });
       }
 
