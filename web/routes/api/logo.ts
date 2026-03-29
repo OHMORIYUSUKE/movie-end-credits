@@ -16,7 +16,7 @@ export const handler: Handlers = {
       headers: {
         "Content-Type": logo.mimeType,
         "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": "public, max-age=10, must-revalidate",
       },
     });
   },

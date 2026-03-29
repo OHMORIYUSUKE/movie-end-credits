@@ -24,6 +24,7 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   const [photos, setPhotos] = useState(initialPhotos);
   const [music, setMusic] = useState(initialMusic);
+  const [credits, setCredits] = useState<any>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,6 +56,9 @@ export default function AdminDashboard({
       }
     };
     updateMissingDurations();
+
+    // クレジット情報の取得
+    fetch("/api/credits").then(res => res.json()).then(data => setCredits(data)).catch(() => {});
   }, []);
 
   const featuredCount = useMemo(() => photos.filter(p => p.featured).length, [photos]);
@@ -153,6 +157,29 @@ export default function AdminDashboard({
     finally { setLoadingId(null); }
   };
 
+  const handleCreditsUpload = async (e: Event) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const fileInput = form.querySelector('input[name="file"]') as HTMLInputElement;
+    const file = fileInput?.files?.[0];
+    if (!file) return;
+
+    setLoadingId("credits-upload");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/credits", { method: "POST", body: formData });
+      if (res.ok) {
+        const newData = await fetch("/api/credits").then(r => r.json());
+        setCredits(newData);
+        alert("クレジットを更新しました。");
+      } else {
+        alert("アップロードに失敗しました。");
+      }
+    } catch (err) { alert("エラーが発生しました。"); }
+    finally { setLoadingId(null); }
+  };
+
   const formatDuration = (seconds?: number) => {
     if (!seconds || isNaN(seconds)) return "";
     const mins = Math.floor(seconds / 60);
@@ -187,7 +214,7 @@ export default function AdminDashboard({
         <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", alignItems: "flex-start" }}>
           <div style={{ padding: "10px", border: "1px dashed #ddd", borderRadius: "8px", backgroundColor: "#f8f9fa", textAlign: "center" }}>
             <div style={{ fontSize: "0.7rem", color: "#888", marginBottom: "8px" }}>現在のロゴ</div>
-            <img src="/api/logo?t={Date.now()}" style={{ height: "60px", width: "auto", display: "block" }} onError={(e) => (e.currentTarget.style.display='none')} />
+            <img src={`/api/logo?t=${Date.now()}`} style={{ height: "60px", width: "auto", display: "block" }} onError={(e) => (e.currentTarget.style.display='none')} />
           </div>
           <form action="/api/logo" method="POST" encType="multipart/form-data" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <input type="file" name="file" accept="image/*" required style={{ fontSize: "0.8rem" }} />
@@ -227,6 +254,31 @@ export default function AdminDashboard({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 📝 クレジット管理パネル */}
+      <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "16px", marginBottom: "24px", border: "1px solid #e9ecef", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+        <h3 style={{ fontSize: "1rem", fontWeight: "bold", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>📝 クレジット（名前リスト）管理</h3>
+        <p style={{ fontSize: "0.8rem", color: "#6c757d", marginBottom: "16px" }}>
+          変換スクリプト（<code>node scripts/csv-to-json.js</code>）で作成した <code>credits.json</code> をアップロードして、エンドロールの名前リストを更新します。
+        </p>
+        <form onSubmit={handleCreditsUpload} style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap", marginBottom: "20px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minWidth: "250px" }}>
+            <label style={{ fontSize: "0.8rem", fontWeight: "bold" }}>credits.json を選択:</label>
+            <input type="file" name="file" accept=".json" required style={{ fontSize: "0.8rem" }} />
+          </div>
+          <button type="submit" disabled={loadingId === "credits-upload"} style={{ padding: "10px 24px", background: "#0d6efd", color: "white", border: "none", borderRadius: "8px", fontSize: "0.9rem", fontWeight: "bold", cursor: "pointer", opacity: loadingId === "credits-upload" ? 0.6 : 1 }}>
+            {loadingId === "credits-upload" ? "更新中..." : "JSONをアップロードして更新 🔄"}
+          </button>
+        </form>
+        {credits && (
+          <div style={{ backgroundColor: "#f8f9fa", padding: "15px", borderRadius: "10px", border: "1px solid #dee2e6" }}>
+            <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#6c757d", marginBottom: "8px" }}>現在のクレジット内容:</div>
+            <pre style={{ fontSize: "0.75rem", margin: 0, overflow: "auto", maxHeight: "200px", backgroundColor: "#fff", padding: "10px", borderRadius: "6px", border: "1px solid #eee" }}>
+              <code>{JSON.stringify(credits, null, 2)}</code>
+            </pre>
+          </div>
+        )}
       </div>
 
       {/* ステータスパネル */}

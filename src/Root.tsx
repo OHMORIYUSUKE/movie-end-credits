@@ -1,7 +1,7 @@
 import "./index.css";
 import { Composition, delayRender, continueRender } from "remotion";
 import { MyComposition } from "./Composition";
-import videoConfig from "./generated/video-config.json";
+import videoConfig from "./generated/video-config.example.json";
 
 export const RemotionRoot: React.FC = () => {
   return (

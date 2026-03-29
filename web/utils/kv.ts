@@ -124,6 +124,22 @@ export async function getLogo(): Promise<LogoData | null> {
   return { ...meta.value, base64 };
 }
 
+// --- 📝 Credits ---
+
+export interface CreditsData {
+  sections: { title: string; names: string[] }[];
+  sponsors: Record<string, string[]>;
+}
+
+export async function saveCredits(data: CreditsData) {
+  await kv.set(["credits"], data);
+}
+
+export async function getCredits(): Promise<CreditsData | null> {
+  const res = await kv.get<CreditsData>(["credits"]);
+  return res.value;
+}
+
 // --- Photo Functions ---
 
 export async function savePhoto(name: string, base64: string, customTimestamp?: number) {

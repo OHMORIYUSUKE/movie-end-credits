@@ -11,8 +11,8 @@ import {
   delayRender,
   continueRender,
 } from "remotion";
-import credits from "./generated/credits.json";
-import videoConfig from "./generated/video-config.json";
+import creditsExample from "./generated/credits.example.json";
+import videoConfig from "./generated/video-config.example.json";
 
 interface PhotoData {
   id: string;
@@ -41,6 +41,7 @@ type CreditItem =
 export const MyComposition: React.FC = () => {
   const [photos, setPhotos] = useState<PhotoData[]>([]);
   const [musicData, setMusicData] = useState<MusicMetadata | null>(null);
+  const [creditsData, setCreditsData] = useState<any>(creditsExample);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [handle] = useState(() => delayRender());
   const frame = useCurrentFrame();
@@ -53,9 +54,10 @@ export const MyComposition: React.FC = () => {
     Promise.all([
       fetch("http://localhost:8000/api/photos").then(res => res.json()),
       fetch("http://localhost:8000/api/music").then(res => res.json()),
-      fetch("http://localhost:8000/api/logo").then(res => res.ok ? "http://localhost:8000/api/logo" : null)
+      fetch("http://localhost:8000/api/logo").then(res => res.ok ? "http://localhost:8000/api/logo" : null),
+      fetch("http://localhost:8000/api/credits").then(res => res.json()).catch(() => creditsExample)
     ])
-      .then(([allPhotos, allMusic, logo]: [PhotoData[], MusicMetadata[], string | null]) => {
+      .then(([allPhotos, allMusic, logo, credits]: [PhotoData[], MusicMetadata[], string | null, any]) => {
         const finalPhotos = allPhotos
           .filter(p => p.selected)
           .sort((a, b) => a.timestamp - b.timestamp);
@@ -64,6 +66,7 @@ export const MyComposition: React.FC = () => {
         const activeMusic = allMusic.find(m => m.active) || allMusic[0];
         setMusicData(activeMusic || null);
         setLogoUrl(logo);
+        setCreditsData(credits || creditsExample);
         
         continueRender(handle);
       })
@@ -88,7 +91,7 @@ export const MyComposition: React.FC = () => {
 
   const creditItems: CreditItem[] = useMemo(() => {
     const items: CreditItem[] = [
-      ...((credits as any).sections || []).flatMap((section: any) => [
+      ...(creditsData.sections || []).flatMap((section: any) => [
         { type: 'header' as const, text: section.title },
         { type: 'spacer' as const, height: 50 },
         ...section.names.map((name: string) => ({ type: 'participant' as const, name })),
@@ -97,7 +100,7 @@ export const MyComposition: React.FC = () => {
       { type: 'spacer', height: 150 },
       { type: 'header', text: '個人スポンサー' },
       { type: 'spacer', height: 100 },
-      ...Object.entries((credits as any).sponsors || {}).reverse().flatMap(([rank, names]: [string, any]) => [
+      ...Object.entries(creditsData.sponsors || {}).reverse().flatMap(([rank, names]: [string, any]) => [
         { type: 'rank' as const, text: rank, large: true },
         { type: 'spacer' as const, height: 40 },
         ...(names as string[]).map(name => ({ type: 'sponsor' as const, name, large: true })),
@@ -112,7 +115,7 @@ export const MyComposition: React.FC = () => {
       items.push({ type: 'logo', src: staticFile((videoConfig as any).logoPath || "logo/logo.svg"), height: 300 });
     }
     return items;
-  }, [logoUrl]);
+  }, [logoUrl, creditsData, height]);
 
   const getItemHeight = (item: CreditItem) => {
     switch (item.type) {

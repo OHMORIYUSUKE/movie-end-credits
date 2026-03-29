@@ -2,6 +2,7 @@
 // This file SHOULD be checked into source version control.
 // This file is automatically updated during development when running `dev.ts`.
 
+import * as $api_credits from "./routes/api/credits.ts";
 import * as $api_logo from "./routes/api/logo.ts";
 import * as $api_music from "./routes/api/music.ts";
 import * as $api_photo_data from "./routes/api/photo_data.ts";
@@ -14,6 +15,7 @@ import { type Manifest } from "$fresh/server.ts";
 
 const manifest = {
   routes: {
+    "./routes/api/credits.ts": $api_credits,
     "./routes/api/logo.ts": $api_logo,
     "./routes/api/music.ts": $api_music,
     "./routes/api/photo_data.ts": $api_photo_data,
