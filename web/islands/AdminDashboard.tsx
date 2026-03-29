@@ -260,7 +260,7 @@ export default function AdminDashboard({
       <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "16px", marginBottom: "24px", border: "1px solid #e9ecef", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
         <h3 style={{ fontSize: "1rem", fontWeight: "bold", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>📝 クレジット（名前リスト）管理</h3>
         <p style={{ fontSize: "0.8rem", color: "#6c757d", marginBottom: "16px" }}>
-          変換スクリプト（<code>node scripts/csv-to-json.js</code>）で作成した <code>credits.json</code> をアップロードして、エンドロールの名前リストを更新します。
+          変換スクリプト（<code>node scripts/csv-to-json.js</code>）で作成した <code>credits.json</code> をアップロールして、エンドロールの名前リストを更新します。
         </p>
         <form onSubmit={handleCreditsUpload} style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap", marginBottom: "20px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minWidth: "250px" }}>

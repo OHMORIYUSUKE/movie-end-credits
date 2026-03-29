@@ -93,9 +93,6 @@ async function main() {
 
     fs.writeFileSync(OUTPUT_FILE, JSON.stringify(result, null, 2));
     console.log(`Success! Created: ${OUTPUT_FILE}`);
-    console.log(`- General participants: ${result.sections[0].names.length}`);
-    console.log(`- Speakers: ${result.sections[1].names.length}`);
-    console.log(`- Staff: ${result.sections[2].names.length}`);
   } catch (e) {
     console.error('Conversion failed:', e.message);
   }

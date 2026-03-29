@@ -10,20 +10,12 @@ export const handler: Handlers = {
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
       });
 
-      // Default empty structure if nothing is set
       return new Response(JSON.stringify({
-        sections: [
-          { title: "一般参加", names: [] },
-          { title: "登壇者", names: [] },
-          { title: "スタッフ", names: [] }
-        ],
+        sections: [{ title: "一般参加", names: [] }, { title: "登壇者", names: [] }, { title: "スタッフ", names: [] }],
         sponsors: {}
       }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
     } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), { 
-        status: 500, 
-        headers: { "Content-Type": "application/json" } 
-      });
+      return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
   },
 
@@ -40,7 +32,6 @@ export const handler: Handlers = {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      // Simple validation of structure
       if (!data.sections || !Array.isArray(data.sections)) {
         throw new Error("Invalid credits.json format (missing sections array)");
       }
