@@ -14,6 +14,11 @@ import {
 import creditsExample from "./generated/credits.example.json";
 import videoConfig from "./generated/video-config.example.json";
 
+// APIのベースURL。環境変数 REMOTION_API_URL があればそれを使用、なければデプロイ済みのURLをデフォルトに。
+const BASE_URL = (typeof process !== "undefined" && process.env.REMOTION_API_URL) 
+  ? process.env.REMOTION_API_URL 
+  : "https://movie-end-credits.uutan1108.deno.net/api";
+
 interface PhotoData {
   id: string;
   name: string;
@@ -52,15 +57,22 @@ export const MyComposition: React.FC = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:8000/api/photos").then(res => res.json()),
-      fetch("http://localhost:8000/api/music").then(res => res.json()),
-      fetch("http://localhost:8000/api/logo").then(res => res.ok ? "http://localhost:8000/api/logo" : null),
-      fetch("http://localhost:8000/api/credits").then(res => res.json()).catch(() => creditsExample)
+      fetch(`${BASE_URL}/photos`).then(res => res.json()),
+      fetch(`${BASE_URL}/music`).then(res => res.json()),
+      fetch(`${BASE_URL}/logo`).then(res => res.ok ? `${BASE_URL}/logo` : null),
+      fetch(`${BASE_URL}/credits`).then(res => res.json()).catch(() => creditsExample)
     ])
       .then(([allPhotos, allMusic, logo, credits]: [PhotoData[], MusicMetadata[], string | null, any]) => {
-        const finalPhotos = allPhotos
+        // 選択された写真があればそれを使う。なければ全写真を表示（プレビュー用）
+        let finalPhotos = allPhotos
           .filter(p => p.selected)
           .sort((a, b) => a.timestamp - b.timestamp);
+        
+        if (finalPhotos.length === 0 && allPhotos.length > 0) {
+          console.log("No selected photos found, using all photos for preview.");
+          finalPhotos = [...allPhotos].sort((a, b) => a.timestamp - b.timestamp);
+        }
+        
         setPhotos(finalPhotos);
 
         const activeMusic = allMusic.find(m => m.active) || allMusic[0];
@@ -172,14 +184,14 @@ export const MyComposition: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: "black", color: "white", fontFamily: "sans-serif" }}>
       {musicData && (
         <Sequence from={DELAY_FRAMES} durationInFrames={musicDurationFrames}>
-          <Audio src={`http://localhost:8000/api/music?id=${musicData.id}`} />
+          <Audio src={`${BASE_URL}/music?id=${musicData.id}`} />
         </Sequence>
       )}
 
       <div style={{ position: "absolute", width: "50%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center", padding: "40px" }}>
         {currentPhoto && (
           <Img
-            src={`http://localhost:8000/api/photo_data?timestamp=${currentPhoto.timestamp}&id=${currentPhoto.id}`}
+            src={`${BASE_URL}/photo_data?timestamp=${currentPhoto.timestamp}&id=${currentPhoto.id}`}
             style={{ width: "80%", height: "auto", maxHeight: "80%", objectFit: "cover", opacity: photoOpacity, boxShadow: "0 0 20px rgba(255, 255, 255, 0.2)" }}
           />
         )}

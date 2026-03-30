@@ -3,6 +3,11 @@ import { Composition, delayRender, continueRender } from "remotion";
 import { MyComposition } from "./Composition";
 import videoConfig from "./generated/video-config.example.json";
 
+// APIのベースURL。Composition.tsx と合わせる。
+const BASE_URL = (typeof process !== "undefined" && process.env.REMOTION_API_URL) 
+  ? process.env.REMOTION_API_URL 
+  : "https://movie-end-credits.uutan1108.deno.net/api";
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -12,7 +17,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={async () => {
           const handle = delayRender("Fetching music duration...");
           try {
-            const res = await fetch("http://localhost:8000/api/music");
+            const res = await fetch(`${BASE_URL}/music`);
             const allMusic = await res.json();
             const activeMusic = allMusic.find((m: any) => m.active) || allMusic[0];
             

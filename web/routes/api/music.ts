@@ -1,9 +1,10 @@
 import { Handlers } from "$fresh/server.ts";
 import { saveMusic, listMusic, setActiveMusic, setMusicDuration, deleteMusic, getMusicData } from "../../utils/kv.ts";
 import { getCookies } from "https://deno.land/std@0.208.0/http/cookie.ts";
+import { decodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts";
 
 export const handler: Handlers = {
-  async GET(req) {
+  async GET(req: Request) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     
@@ -11,9 +12,9 @@ export const handler: Handlers = {
       const base64 = await getMusicData(id);
       if (!base64) return new Response("Not found", { status: 404 });
       
-      const binary = atob(base64.split(",")[1] || base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const parts = base64.split(",");
+      const base64Data = parts.length > 1 ? parts[1] : parts[0];
+      const bytes = decodeBase64(base64Data);
       
       const range = req.headers.get("range");
       const headers = {
@@ -23,17 +24,17 @@ export const handler: Handlers = {
       };
 
       if (!range) {
-        return new Response(bytes, {
+        return new Response(bytes as any, {
           headers: { ...headers, "Content-Length": bytes.byteLength.toString() }
         });
       }
 
-      const parts = range.replace(/bytes=/, "").split("-");
-      const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : bytes.byteLength - 1;
+      const partsRange = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(partsRange[0], 10);
+      const end = partsRange[1] ? parseInt(partsRange[1], 10) : bytes.byteLength - 1;
       const chunk = bytes.slice(start, end + 1);
 
-      return new Response(chunk, {
+      return new Response(chunk as any, {
         status: 206,
         statusText: "Partial Content",
         headers: {
@@ -53,7 +54,7 @@ export const handler: Handlers = {
     });
   },
 
-  async POST(req) {
+  async POST(req: Request) {
     const cookies = getCookies(req.headers);
     if (cookies.isAdmin !== "true") return new Response("Unauthorized", { status: 401 });
 

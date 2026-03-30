@@ -11,38 +11,33 @@ export const handler: Handlers = {
       const cookies = getCookies(req.headers);
       const isAdmin = cookies.isAdmin === "true";
 
+      // ローカルホストまたはアドミンの場合は全メタデータ取得を許可
       const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
-      
-      if (!isAdmin && !isLocalhost) {
-        return new Response(JSON.stringify([]), {
-          headers: { 
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-        });
-      }
+      const isPublic = !isAdmin && !isLocalhost;
 
       // 📸 重要: base64を含まないメタデータのみを返すように変更
-      const photos = await listPhotoMetadata(!(all && isAdmin));
-      
-      console.log(`[API GET] Found ${photos.length} photos (metadata only)`);
+      // パブリックアクセスの場合は、visibleなもののみを返す（selectedかどうかはアプリ側で判断可能にする）
+      const photos = await listPhotoMetadata(isPublic); // isPublicならvisibleのみ
+
+      console.log(`[API GET] Found ${photos.length} photos (metadata only) - isPublic: ${isPublic}`);
 
       return new Response(JSON.stringify(photos), {
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
         },
       });
-    } catch (err) {
+      } catch (err: any) {
       console.error("GET /api/photos failed:", err);
-      return new Response(JSON.stringify({ error: err.message }), { 
+      return new Response(JSON.stringify({ error: (err as Error).message }), { 
         status: 500,
         headers: { "Content-Type": "application/json" }
       });
-    }
-  },
+      }
+      },
 
-  async POST(req) {
+      async POST(req: Request) {
+
     try {
       const formData = await req.formData();
       const action = formData.get("action");
