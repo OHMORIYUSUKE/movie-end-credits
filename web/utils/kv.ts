@@ -1,4 +1,10 @@
-const kv = await Deno.openKv();
+let _kv: Deno.Kv | undefined;
+async function getKv(): Promise<Deno.Kv> {
+  if (!_kv) {
+    _kv = await Deno.openKv();
+  }
+  return _kv;
+}
 
 const CHUNK_SIZE = 60 * 1024; // 60KB chunks
 
@@ -28,6 +34,7 @@ export interface MusicMetadata {
 }
 
 export async function saveMusic(name: string, base64: string, duration?: number) {
+  const kv = await getKv();
   const id = crypto.randomUUID();
   const timestamp = Date.now();
   const list = await listMusic();
@@ -42,6 +49,7 @@ export async function saveMusic(name: string, base64: string, duration?: number)
 }
 
 export async function listMusic(): Promise<MusicMetadata[]> {
+  const kv = await getKv();
   const iter = kv.list<MusicMetadata>({ prefix: ["music_metadata"] });
   const music: MusicMetadata[] = [];
   for await (const res of iter) music.push(res.value);
@@ -54,6 +62,7 @@ export async function getActiveMusic(): Promise<MusicMetadata | null> {
 }
 
 export async function getMusicData(id: string): Promise<string> {
+  const kv = await getKv();
   const iter = kv.list<string>({ prefix: ["music_chunks", id] });
   const chunks: string[] = [];
   for await (const res of iter) {
@@ -64,6 +73,7 @@ export async function getMusicData(id: string): Promise<string> {
 }
 
 export async function setActiveMusic(id: string) {
+  const kv = await getKv();
   const list = await listMusic();
   const atomic = kv.atomic();
   for (const m of list) {
@@ -73,6 +83,7 @@ export async function setActiveMusic(id: string) {
 }
 
 export async function setMusicDuration(timestamp: number, id: string, duration: number) {
+  const kv = await getKv();
   const entry = await kv.get<MusicMetadata>(["music_metadata", timestamp, id]);
   if (entry.value) {
     await kv.set(["music_metadata", timestamp, id], { ...entry.value, duration });
@@ -82,6 +93,7 @@ export async function setMusicDuration(timestamp: number, id: string, duration: 
 }
 
 export async function deleteMusic(timestamp: number, id: string) {
+  const kv = await getKv();
   const atomic = kv.atomic();
   atomic.delete(["music_metadata", timestamp, id]);
   const chunks = kv.list({ prefix: ["music_chunks", id] });
@@ -99,6 +111,7 @@ export interface LogoData {
 }
 
 export async function saveLogo(name: string, mimeType: string, base64: string) {
+  const kv = await getKv();
   const id = "current_logo";
   const logo: Omit<LogoData, "base64"> = { id, name, mimeType };
   
@@ -114,6 +127,7 @@ export async function saveLogo(name: string, mimeType: string, base64: string) {
 }
 
 export async function getLogo(): Promise<LogoData | null> {
+  const kv = await getKv();
   const meta = await kv.get<Omit<LogoData, "base64">>(["logo_metadata"]);
   if (!meta.value) return null;
   
@@ -132,10 +146,12 @@ export interface CreditsData {
 }
 
 export async function saveCredits(data: CreditsData) {
+  const kv = await getKv();
   await kv.set(["credits"], data);
 }
 
 export async function getCredits(): Promise<CreditsData | null> {
+  const kv = await getKv();
   const res = await kv.get<CreditsData>(["credits"]);
   return res.value;
 }
@@ -143,6 +159,7 @@ export async function getCredits(): Promise<CreditsData | null> {
 // --- Photo Functions ---
 
 export async function savePhoto(name: string, base64: string, customTimestamp?: number) {
+  const kv = await getKv();
   const timestamp = customTimestamp || Date.now();
   const id = timestamp.toString() + "_" + Math.random().toString(36).slice(2, 9);
   const metadata: PhotoMetadata = { id, name, timestamp, visible: true, featured: false, selected: false };
@@ -154,6 +171,7 @@ export async function savePhoto(name: string, base64: string, customTimestamp?: 
 }
 
 export async function updatePhotoMetadata(timestamp: number, id: string, updates: Partial<PhotoMetadata>) {
+  const kv = await getKv();
   const entry = await kv.get<PhotoMetadata>(["photos", timestamp, id]);
   if (entry.value) {
     await kv.set(["photos", timestamp, id], { ...entry.value, ...updates });
@@ -163,6 +181,7 @@ export async function updatePhotoMetadata(timestamp: number, id: string, updates
 }
 
 export async function bulkUpdatePhotoMetadata(updates: { timestamp: number, id: string, updates: Partial<PhotoMetadata> }[]) {
+  const kv = await getKv();
   const atomic = kv.atomic();
   for (const update of updates) {
     const entry = await kv.get<PhotoMetadata>(["photos", update.timestamp, update.id]);
@@ -172,6 +191,7 @@ export async function bulkUpdatePhotoMetadata(updates: { timestamp: number, id: 
 }
 
 export async function listPhotoMetadata(onlyVisible = false): Promise<PhotoMetadata[]> {
+  const kv = await getKv();
   const photos: PhotoMetadata[] = [];
   const entries = kv.list<PhotoMetadata>({ prefix: ["photos"] });
   for await (const entry of entries) {
@@ -183,6 +203,7 @@ export async function listPhotoMetadata(onlyVisible = false): Promise<PhotoMetad
 }
 
 export async function getPhotoData(timestamp: number, id: string): Promise<PhotoData | null> {
+  const kv = await getKv();
   const entry = await kv.get<PhotoMetadata>(["photos", timestamp, id]);
   if (!entry.value) return null;
   let base64 = "";
@@ -192,6 +213,7 @@ export async function getPhotoData(timestamp: number, id: string): Promise<Photo
 }
 
 export async function deletePhoto(timestamp: number, id?: string) {
+  const kv = await getKv();
   if (id) {
     await kv.delete(["photos", timestamp, id]);
     const chunkEntries = kv.list({ prefix: ["photo_chunks", timestamp, id] });

@@ -1,7 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { savePhoto, listPhotoMetadata, deletePhoto, updatePhotoMetadata, bulkUpdatePhotoMetadata } from "../../utils/kv.ts";
 import { getCookies } from "https://deno.land/std@0.208.0/http/cookie.ts";
-import exifr from "https://esm.sh/exifr@7.1.3";
+import exifr from "npm:exifr@7.1.3";
 
 export const handler: Handlers = {
   async GET(req) {
