@@ -6,7 +6,9 @@ import videoConfig from "./generated/video-config.example.json";
 // APIのベースURL。Composition.tsx と合わせる。
 const BASE_URL = (typeof process !== "undefined" && process.env.REMOTION_API_URL) 
   ? process.env.REMOTION_API_URL 
-  : "https://movie-end-credits.uutan1108.deno.net/api";
+  : (typeof window !== "undefined" && window.location.hostname === "localhost")
+    ? "http://localhost:3002/api/proxy"
+    : "https://movie-end-credits.uutan1108.deno.net/api";
 
 export const RemotionRoot: React.FC = () => {
   return (

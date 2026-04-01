@@ -24,3 +24,5 @@ src/generated/*.json
 
 *.mp3
 *.csv
+
+build

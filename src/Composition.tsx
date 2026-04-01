@@ -17,7 +17,9 @@ import videoConfig from "./generated/video-config.example.json";
 // APIのベースURL。環境変数 REMOTION_API_URL があればそれを使用、なければデプロイ済みのURLをデフォルトに。
 const BASE_URL = (typeof process !== "undefined" && process.env.REMOTION_API_URL) 
   ? process.env.REMOTION_API_URL 
-  : "https://movie-end-credits.uutan1108.deno.net/api";
+  : (typeof window !== "undefined" && window.location.hostname === "localhost")
+    ? "http://localhost:3002/api/proxy"
+    : "https://movie-end-credits.uutan1108.deno.net/api";
 
 interface PhotoData {
   id: string;
