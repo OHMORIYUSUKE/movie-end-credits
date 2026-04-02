@@ -26,3 +26,5 @@ src/generated/*.json
 *.csv
 
 build
+
+api/data

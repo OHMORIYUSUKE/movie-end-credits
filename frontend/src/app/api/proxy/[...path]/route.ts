@@ -44,10 +44,20 @@ async function proxy(req: NextRequest, paramsPromise: Promise<{ path: string[] }
       const location = response.headers.get("Location");
       if (location) {
         let redirectUrl;
+        const hostHeader = req.headers.get("host"); // "localhost:3002" が入る
+        
         try {
           redirectUrl = new URL(location);
-          if (redirectUrl.hostname === "localhost") {
-            redirectUrl.port = url.port;
+          if (redirectUrl.hostname === "localhost" || redirectUrl.hostname === "127.0.0.1") {
+            if (hostHeader) {
+              const [host, port] = hostHeader.split(":");
+              redirectUrl.hostname = host;
+              if (port) {
+                redirectUrl.port = port;
+              } else {
+                redirectUrl.port = "";
+              }
+            }
           }
         } catch (e) {
           redirectUrl = new URL(location, url.origin);

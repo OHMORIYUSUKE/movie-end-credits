@@ -1,0 +1,50 @@
+services:
+  api:
+    build:
+      context: ./api
+    ports:
+      - "8000:8000"
+    environment:
+      - ADMIN_PASSWORD=admin123
+      - KV_PATH=/app/data/kv.sqlite
+      - TZ=Asia/Tokyo
+    volumes:
+      - ./api/data:/app/data
+    healthcheck:
+      test: ["CMD", "deno", "eval", "await fetch('http://localhost:8000/api/credits')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - DENO_API_BASE=http://api:8000/api
+      - NEXT_PUBLIC_CLIENT_API_BASE=/api/proxy
+      - TZ=Asia/Tokyo
+    depends_on:
+      api:
+        condition: service_healthy
+
+  remotion:
+    build:
+      context: .
+      dockerfile: Dockerfile.remotion
+    ports:
+      - "3001:3001"
+    environment:
+      - REMOTION_API_URL=http://localhost:3000/api/proxy
+      - NODE_OPTIONS=--max-old-space-size=4096
+      - TZ=Asia/Tokyo
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 4G

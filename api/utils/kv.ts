@@ -1,7 +1,8 @@
 let _kv: Deno.Kv | undefined;
 async function getKv(): Promise<Deno.Kv> {
   if (!_kv) {
-    _kv = await Deno.openKv();
+    const kvPath = Deno.env.get("KV_PATH");
+    _kv = await Deno.openKv(kvPath);
   }
   return _kv;
 }
