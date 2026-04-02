@@ -5,7 +5,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - ADMIN_PASSWORD=admin123
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - KV_PATH=/app/data/kv.sqlite
       - TZ=Asia/Tokyo
     volumes:
@@ -36,7 +36,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - REMOTION_API_URL=http://localhost:3000/api/proxy
+      - REMOTION_API_URL=http://x85-131-245-24.static.xvps.ne.jp/api/proxy
       - NODE_OPTIONS=--max-old-space-size=4096
       - TZ=Asia/Tokyo
     depends_on:
