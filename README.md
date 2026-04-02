@@ -21,6 +21,32 @@
 
 ---
 
+## ⚙️ 環境変数 (Environment Variables)
+
+デプロイ時やローカル開発時に、必要に応じて以下の環境変数を設定してください。
+
+### ルートディレクトリ (Scripts / Remotion)
+| 変数名 | 説明 | デフォルト値 |
+| :--- | :--- | :--- |
+| `REMOTION_API_URL` | Remotionがデータ取得に使用する API のベース URL | `https://movie-end-credits.uutan1108.deno.net/api` |
+| `FORTEE_STAFF_API_URL` | スタッフ情報を取得する Fortee API の URL | `https://fortee.jp/engineers-anime-2026/api/staff?type=simple` |
+| `FORTEE_TIMETABLE_API_URL` | タイムテーブル情報を取得する Fortee API の URL | `https://fortee.jp/engineers-anime-2026/api/timetable` |
+
+### API サーバー (`api/`)
+| 変数名 | 説明 | デフォルト値 |
+| :--- | :--- | :--- |
+| `ADMIN_PASSWORD` | 管理画面へのログインパスワード | `admin123` |
+| `KV_PATH` | Deno KV のパス（ローカル開発時に指定可能） | - |
+
+### フロントエンド (`frontend/`)
+| 変数名 | 説明 | デフォルト値 |
+| :--- | :--- | :--- |
+| `DENO_API_BASE` | Next.js サーバー側から Deno API にアクセスするための URL | `http://localhost:8000/api` |
+| `NEXT_PUBLIC_CLIENT_API_BASE` | ブラウザ側から API にアクセスするためのパス | `/api/proxy` |
+| `NEXT_PUBLIC_PRIVACY_POLICY_URL` | 写真投稿時のプライバシーポリシーの URL | `https://fortee.jp/engineers-anime-2026/page/privacy-policy` |
+
+---
+
 ## 📸 起動方法
 
 ### 1. バックエンド (Deno API)

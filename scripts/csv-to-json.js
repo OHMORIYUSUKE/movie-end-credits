@@ -49,10 +49,13 @@ const parseCSV = (filePath) => {
 async function main() {
   console.log('--- Converting CSV and Fortee data to JSON ---');
   
+  const FORTEE_STAFF_API_URL = process.env.FORTEE_STAFF_API_URL || 'https://fortee.jp/engineers-anime-2026/api/staff?type=simple';
+  const FORTEE_TIMETABLE_API_URL = process.env.FORTEE_TIMETABLE_API_URL || 'https://fortee.jp/engineers-anime-2026/api/timetable';
+
   try {
     const [staffData, timetableData] = await Promise.all([
-      fetchJSON('https://fortee.jp/engineers-anime-2026/api/staff?type=simple'),
-      fetchJSON('https://fortee.jp/engineers-anime-2026/api/timetable')
+      fetchJSON(FORTEE_STAFF_API_URL),
+      fetchJSON(FORTEE_TIMETABLE_API_URL)
     ]);
 
     const participants = parseCSV(PARTICIPANTS_CSV);

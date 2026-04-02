@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const DENO_API_BASE = "http://localhost:8000/api";
+const DENO_API_BASE = process.env.DENO_API_BASE || "http://localhost:8000/api";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return proxy(req, params);

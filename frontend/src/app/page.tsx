@@ -24,8 +24,8 @@ async function getInitialData() {
 
   // Deno API からデータを取得
   // クライアント側からもアクセスできるように、プロキシを経由する
-  const apiBase = "http://localhost:8000/api";
-  const clientApiBase = "/api/proxy";
+  const apiBase = process.env.DENO_API_BASE || "http://localhost:8000/api";
+  const clientApiBase = process.env.NEXT_PUBLIC_CLIENT_API_BASE || "/api/proxy";
   
   const [photosRes, musicRes] = await Promise.all([
     fetch(`${apiBase}/photos`, { cache: 'no-store' }),
@@ -67,6 +67,8 @@ export default async function Home(props: { searchParams: Promise<{ success?: st
   const data = await getInitialData();
   const { photos, music, isAdmin, videoPhotoCapacity, videoDurationSeconds, secondsPerPhoto, fps, startDelayFrames, endDelayFrames, clientApiBase } = data;
 
+  const privacyPolicyUrl = process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL || "https://fortee.jp/engineers-anime-2026/page/privacy-policy";
+
   return (
     <div className="bg-[#f8f9fa] min-h-screen">
       <div className="max-w-[1200px] mx-auto p-5">
@@ -75,7 +77,7 @@ export default async function Home(props: { searchParams: Promise<{ success?: st
             {isAdmin ? "管理者用 管理パネル" : "思い出をアップロード"}
           </h1>
           {isAdmin && (
-            <a href="/api/proxy/logout" className="text-sm text-[#ff4d4f] no-underline">ログアウト</a>
+            <a href={`${clientApiBase}/logout`} className="text-sm text-[#ff4d4f] no-underline">ログアウト</a>
           )}
         </header>
 
@@ -98,10 +100,10 @@ export default async function Home(props: { searchParams: Promise<{ success?: st
               
               <div className="text-[0.75rem] text-[#6c757d] border-t border-gray-100 pt-3 mb-5">
                 <p className="mb-1">※投稿された写真は、動画の尺などの都合により、採用されない場合があります。あらかじめご了承ください。</p>
-                <p>※写真は<a href="https://fortee.jp/engineers-anime-2026/page/privacy-policy" target="_blank" className="text-[#0d6efd]">プライバシーポリシー</a>に基づき適切に取り扱います。</p>
+                <p>※写真は<a href={privacyPolicyUrl} target="_blank" className="text-[#0d6efd]">プライバシーポリシー</a>に基づき適切に取り扱います。</p>
               </div>
 
-              <form action="/api/proxy/photos" method="POST" encType="multipart/form-data">
+              <form action={`${clientApiBase}/photos`} method="POST" encType="multipart/form-data">
                 <div className="mb-5">
                   <input type="file" name="file" accept="image/*" multiple required className="w-full p-3 border-2 border-dashed border-[#dee2e6] rounded-lg text-sm" />
                 </div>
@@ -121,7 +123,7 @@ export default async function Home(props: { searchParams: Promise<{ success?: st
                 )}
                 {photos.map((photo) => (
                   <div key={photo.id} className="rounded-xl overflow-hidden shadow-sm bg-white relative">
-                    <img src={`/api/proxy/photo_data?timestamp=${photo.timestamp}&id=${photo.id}`} className="w-full h-[140px] object-cover" loading="lazy" />
+                    <img src={`${clientApiBase}/photo_data?timestamp=${photo.timestamp}&id=${photo.id}`} className="w-full h-[140px] object-cover" loading="lazy" />
                     {photo.featured && (
                       <div className="absolute top-2 right-2 bg-yellow-400/90 px-1.5 py-0.5 rounded text-[10px] font-bold">🌟</div>
                     )}
