@@ -1,0 +1,23 @@
+{
+    # 自動SSLを有効にするためのメールアドレス（オプション）
+    # email {$EMAIL}
+}
+
+# HTTPとHTTPSの両方を受け付ける設定
+{$DOMAIN}, :80 {
+    # APIへのリクエストをAPIコンテナに転送
+    reverse_proxy /api/* api:8000
+
+    # それ以外はフロントエンドに転送
+    reverse_proxy frontend:3000
+
+    # ログ出力
+    log {
+        output stdout
+    }
+
+    # アップロードサイズ制限の緩和
+    request_body {
+        max_size 100mb
+    }
+}

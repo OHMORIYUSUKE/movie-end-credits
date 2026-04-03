@@ -2,8 +2,8 @@ services:
   api:
     build:
       context: ./api
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - KV_PATH=/app/data/kv.sqlite
@@ -19,15 +19,33 @@ services:
   frontend:
     build:
       context: ./frontend
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       - DENO_API_BASE=http://api:8000/api
-      - NEXT_PUBLIC_CLIENT_API_BASE=/api/proxy
+      - NEXT_PUBLIC_CLIENT_API_BASE=/api
       - TZ=Asia/Tokyo
     depends_on:
       api:
         condition: service_healthy
+
+  caddy:
+    image: caddy:2.7-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_started
 
   remotion:
     build:
@@ -36,7 +54,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - REMOTION_API_URL=http://x85-131-245-24.static.xvps.ne.jp/api/proxy
+      - REMOTION_API_URL=http://${DOMAIN}/api
       - NODE_OPTIONS=--max-old-space-size=4096
       - TZ=Asia/Tokyo
     depends_on:
@@ -48,3 +66,7 @@ services:
       resources:
         limits:
           memory: 4G
+
+volumes:
+  caddy_data:
+  caddy_config:
