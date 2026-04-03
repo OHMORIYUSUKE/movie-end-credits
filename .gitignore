@@ -27,4 +27,5 @@ src/generated/*.json
 
 build
 
+# --- Added ---
 api/data
