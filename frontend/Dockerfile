@@ -1,5 +1,8 @@
 FROM node:22-alpine
 
+# Alpineでタイムゾーンを有効にするために tzdata をインストール
+RUN apk add --no-cache tzdata
+
 WORKDIR /app
 
 COPY package.json yarn.lock* ./
