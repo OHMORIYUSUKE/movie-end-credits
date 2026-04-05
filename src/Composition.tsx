@@ -19,6 +19,7 @@ const getStaticPath = (fileName: string) => {
 };
 
 const photos = (generatedConfig.photos as string[]).map(name => getStaticPath(name));
+const logoSrc = staticFile(((generatedConfig as any).logoPath as string || "public/logo/logo.svg").replace(/^public\//, ''));
 const audioSrc = staticFile((generatedConfig.audioPath as string).replace(/^public\//, ''));
 
 type CreditItem = 
@@ -49,7 +50,7 @@ const creditItems: CreditItem[] = [
     { type: 'spacer' as const, height: 100 },
   ]),
   { type: 'spacer', height: 200 },
-  { type: 'logo', src: staticFile("logo/logo.svg"), height: 300 }
+  { type: 'logo', src: logoSrc, height: 300 }
 ];
 
 export const MyComposition: React.FC = () => {
@@ -59,6 +60,10 @@ export const MyComposition: React.FC = () => {
   const DELAY_FRAMES = 0.5 * fps; // 0.5 second delay
   const END_DELAY_FRAMES = 2 * fps; // 2 seconds delay at the end
   const activeDuration = durationInFrames - DELAY_FRAMES - END_DELAY_FRAMES;
+
+  // Photo settings from config
+  const configPhotoDisplaySeconds = (generatedConfig as any).photoDisplaySeconds;
+  const configPhotoFadeFrames = (generatedConfig as any).photoFadeFrames || 15;
 
   // Scroll logic: calculate total height
   const getItemHeight = (item: CreditItem) => {
@@ -87,19 +92,21 @@ export const MyComposition: React.FC = () => {
     scrollY = -totalCreditsHeight + height;
   }
 
-  // Photo rotation: switch photo evenly across active duration
-  const photoFrameDuration = activeDuration / photos.length;
+  // Photo rotation: switch photo evenly across active duration or use config
+  const photoFrameDuration = photos.length > 0 
+    ? (configPhotoDisplaySeconds ? configPhotoDisplaySeconds * fps : activeDuration / photos.length) 
+    : activeDuration;
   const activeFrame = Math.max(0, frame - DELAY_FRAMES);
-  const photoIndex = Math.min(
+  const photoIndex = photos.length > 0 ? Math.min(
     photos.length - 1,
     Math.floor(activeFrame / photoFrameDuration)
-  );
+  ) : 0;
   const currentPhoto = photos[photoIndex];
 
   // Photo fade in/out:
   const localFrame = activeFrame % photoFrameDuration;
-  const fadeDuration = 15; // 0.5 seconds
-  const photoOpacity = frame < DELAY_FRAMES || frame > durationInFrames - END_DELAY_FRAMES
+  const fadeDuration = configPhotoFadeFrames;
+  const photoOpacity = (photos.length === 0 || frame < DELAY_FRAMES || frame > durationInFrames - END_DELAY_FRAMES)
     ? 0
     : interpolate(
         localFrame,
@@ -126,17 +133,19 @@ export const MyComposition: React.FC = () => {
           padding: "40px",
         }}
       >
-        <Img
-          src={currentPhoto}
-          style={{
-            width: "80%",
-            height: "auto",
-            maxHeight: "80%",
-            objectFit: "cover",
-            opacity: photoOpacity,
-            boxShadow: "0 0 20px rgba(255, 255, 255, 0.2)",
-          }}
-        />
+        {photos.length > 0 && (
+          <Img
+            src={currentPhoto}
+            style={{
+              width: "80%",
+              height: "auto",
+              maxHeight: "80%",
+              objectFit: "cover",
+              opacity: photoOpacity,
+              boxShadow: "0 0 20px rgba(255, 255, 255, 0.2)",
+            }}
+          />
+        )}
       </div>
 
       {/* Right side: Scrolling Staff Credits */}

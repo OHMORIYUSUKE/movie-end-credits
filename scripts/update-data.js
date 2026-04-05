@@ -14,18 +14,28 @@ const SPONSORS_CSV = scriptConfig.sponsorsCsv;
 const CREDITS_JSON = 'src/credits.json';
 
 const PHOTOS_DIR = scriptConfig.mediaPath;
-const MAX_PHOTOS = 20;
+const MAX_PHOTOS = 1000;
 
 const MP3_PATH = scriptConfig.audioPath;
+const LOGO_PATH = scriptConfig.logoPath;
 const GENERATED_CONFIG_JSON = 'src/generated-config.json';
 const FPS = 30;
 const BUFFER_SECONDS = 4;
 
+// Constants matching Composition.tsx
+const DELAY_FRAMES = 0.5 * FPS;
+const END_DELAY_FRAMES = 2 * FPS;
+
 /**
- * Simple CSV parser that handles quotes and BOM
- */
+* Simple CSV parser that handles quotes and BOM
+*/
 const parseCSV = (filePath) => {
-  let content = fs.readFileSync(filePath, 'utf-8');
+if (!fs.existsSync(filePath)) {
+  console.error(styleText('red', `Error: File not found: ${filePath}`));
+  return [];
+}
+let content = fs.readFileSync(filePath, 'utf-8');
+
   if (content.startsWith('\ufeff')) {
     content = content.slice(1);
   }
@@ -58,7 +68,7 @@ function updateCredits() {
   console.log('Updating credits...');
   
   if (!fs.existsSync(PARTICIPANTS_CSV) || !fs.existsSync(SPONSORS_CSV)) {
-    console.error('Error: CSV files not found.', { participants: PARTICIPANTS_CSV, sponsors: SPONSORS_CSV });
+    console.error(styleText('red', 'Error: CSV files not found.'), { participants: PARTICIPANTS_CSV, sponsors: SPONSORS_CSV });
     return;
   }
 
@@ -71,7 +81,7 @@ function updateCredits() {
   const statusIndex = participantHeader.indexOf('参加ステータス');
 
   if (slotIndex === -1 || nameIndex === -1 || statusIndex === -1) {
-    console.error('Error: Required columns not found in participants CSV.');
+    console.error(styleText('red', 'Error: Required columns not found in participants CSV.'));
     return;
   }
 
@@ -131,9 +141,43 @@ function updateCredits() {
  */
 async function updateGeneratedData() {
   console.log('Updating generated data (photos)...');
-  
-  let photos = [];
 
+  // 1. Calculate Duration First
+  let durationInFrames = 3000; // Default fallback
+  if (fs.existsSync(MP3_PATH)) {
+    try {
+      const output = execSync(`afinfo "${MP3_PATH}" | grep duration`).toString();
+      const match = output.match(/duration: ([\d.]+)/);
+      if (match) {
+        const durationSeconds = parseFloat(match[1]);
+        durationInFrames = Math.ceil((durationSeconds + BUFFER_SECONDS) * FPS);
+      }
+    } catch (err) {
+      console.error('Error calculating duration:', err.message);
+    }
+  } else {
+    console.warn(styleText('red', `Warning: MP3 file ${MP3_PATH} not found.`));
+  }
+
+  const activeDurationFrames = durationInFrames - DELAY_FRAMES - END_DELAY_FRAMES;
+
+  // 2. Determine photo selection logic
+  const displaySeconds = scriptConfig.photoDisplaySeconds;
+  const fadeSeconds = scriptConfig.photoFadeSeconds !== undefined ? scriptConfig.photoFadeSeconds : 0.5;
+  const fadeFrames = Math.round(fadeSeconds * FPS);
+  
+  let targetPhotoCount = MAX_PHOTOS;
+  if (displaySeconds) {
+    const displayFrames = displaySeconds * FPS;
+    targetPhotoCount = Math.ceil(activeDurationFrames / displayFrames);
+    
+    if (displayFrames <= fadeFrames * 2) {
+      console.warn(styleText('yellow', `Warning: photoDisplaySeconds (${displaySeconds}s) is too short for photoFadeSeconds (${fadeSeconds}s). Photos will fade out before fully appearing.`));
+    }
+  }
+
+  // 3. Collect and Sort Photos
+  let photos = [];
   if (fs.existsSync(PHOTOS_DIR)) {
     const files = fs.readdirSync(PHOTOS_DIR);
     const photoData = await Promise.all(
@@ -154,36 +198,37 @@ async function updateGeneratedData() {
           return { name: f, time };
         })
     );
+
+    if(photoData.length === 0) {
+      console.warn(styleText('red', `Warning: Photos directory is empty or contains no valid images: ${PHOTOS_DIR}`));
+    }
+
     photoData.sort((a, b) => a.time - b.time);
 
-    const count = Math.min(MAX_PHOTOS, photoData.length);
-    for (let i = 0; i < count; i++) {
-      const index = Math.floor(i * (photoData.length / count));
-      photos.push(photoData[index].name);
+    // 4. Pick Exactly the Needed Number of Photos (evenly spaced)
+    const count = Math.min(targetPhotoCount, photoData.length);
+    if (count > 0) {
+      for (let i = 0; i < count; i++) {
+        const index = Math.floor(i * (photoData.length / count));
+        photos.push(photoData[index].name);
+      }
     }
+    
+    console.log(`Selected ${photos.length} photos (Target was ${targetPhotoCount}).`);
   } else {
     console.warn(styleText('red', `Warning: Directory ${PHOTOS_DIR} not found.`));
   }
 
-  let durationInFrames = 3000; // Default fallback
-  if (fs.existsSync(MP3_PATH)) {
-    try {
-      const output = execSync(`afinfo "${MP3_PATH}" | grep duration`).toString();
-      const match = output.match(/duration: ([\d.]+)/);
-      if (match) {
-        const durationSeconds = parseFloat(match[1]);
-        durationInFrames = Math.ceil((durationSeconds + BUFFER_SECONDS) * FPS);
-      }
-    } catch (err) {
-      console.error('Error calculating duration:', err.message);
-    }
-  } else {
-    console.warn(styleText('red', `Warning: MP3 file ${MP3_PATH} not found.`));
+  if (LOGO_PATH && !fs.existsSync(LOGO_PATH)) {
+    console.warn(styleText('red', `Warning: Logo file not found at: ${LOGO_PATH}`));
   }
 
   const generatedConfig = {
     mediaPath: scriptConfig.mediaPath,
     audioPath: scriptConfig.audioPath,
+    logoPath: scriptConfig.logoPath,
+    photoDisplaySeconds: scriptConfig.photoDisplaySeconds || null,
+    photoFadeFrames: fadeFrames,
     sponsorHeader: scriptConfig.sponsorHeader || "スポンサー",
     photos,
     durationInFrames

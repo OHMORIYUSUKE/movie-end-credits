@@ -1,6 +1,9 @@
 {
   "mediaPath": "public/photos",
   "audioPath": "public/music/end.mp3",
+  "logoPath": "public/logo/logo.svg",
+  "photoDisplaySeconds": 5,
+  "photoFadeSeconds": 0.5,
   "participantsCsv": "public/credit/participants.csv",
   "sponsorHeader": "個人スポンサー",
   "sponsorsCsv": "public/credit/sponsors.csv",
