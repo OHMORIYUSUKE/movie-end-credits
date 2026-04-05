@@ -9,11 +9,17 @@ import {
   useVideoConfig,
   Sequence,
 } from "remotion";
-import photosList from "./photos.json";
+import generatedConfig from "./generated-config.json";
 import credits from "./credits.json";
-import participants from "./participants.json";
 
-const photos = (photosList as string[]).map(name => staticFile(`photos/${name}`));
+// Helper to get static path from public-relative path in config
+const getStaticPath = (fileName: string) => {
+  const baseDir = (generatedConfig.mediaPath as string).replace(/^public\//, '');
+  return staticFile(`${baseDir}/${fileName}`);
+};
+
+const photos = (generatedConfig.photos as string[]).map(name => getStaticPath(name));
+const audioSrc = staticFile((generatedConfig.audioPath as string).replace(/^public\//, ''));
 
 type CreditItem = 
   | { type: 'staff'; role: string; name: string }
@@ -26,7 +32,7 @@ type CreditItem =
 
 const creditItems: CreditItem[] = [
   // Participants from CSV
-  ...Object.entries(participants as Record<string, string[]>).flatMap(([slotName, names]) => [
+  ...Object.entries(credits.participants as Record<string, string[]>).flatMap(([slotName, names]) => [
     { type: 'header' as const, text: slotName },
     { type: 'spacer' as const, height: 50 },
     ...names.map(name => ({ type: 'participant' as const, name })),
@@ -105,7 +111,7 @@ export const MyComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "black", color: "white", fontFamily: "sans-serif" }}>
       <Sequence from={DELAY_FRAMES} durationInFrames={activeDuration}>
-        <Audio src={staticFile("music/end.mp3")} />
+        <Audio src={audioSrc} />
       </Sequence>
 
       {/* Left side: Photos */}

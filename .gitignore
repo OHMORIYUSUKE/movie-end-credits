@@ -19,3 +19,7 @@ public/credit/*
 !public/credit/.gitkeep
 *.mp3
 *.csv
+
+# Generated data
+src/credits.json
+src/generated-config.json

@@ -1,0 +1,201 @@
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+const exifr = require('exifr');
+
+// Load configurations
+const SCRIPT_CONFIG_PATH = 'scripts/config.json';
+const scriptConfig = JSON.parse(fs.readFileSync(SCRIPT_CONFIG_PATH, 'utf8'));
+
+// Configuration
+const PARTICIPANTS_CSV = scriptConfig.participantsCsv;
+const SPONSORS_CSV = scriptConfig.sponsorsCsv;
+const CREDITS_JSON = 'src/credits.json';
+
+const PHOTOS_DIR = scriptConfig.mediaPath;
+const MAX_PHOTOS = 20;
+
+const MP3_PATH = scriptConfig.audioPath;
+const GENERATED_CONFIG_JSON = 'src/generated-config.json';
+const FPS = 30;
+const BUFFER_SECONDS = 4;
+
+/**
+ * Simple CSV parser that handles quotes and BOM
+ */
+const parseCSV = (filePath) => {
+  let content = fs.readFileSync(filePath, 'utf-8');
+  if (content.startsWith('\ufeff')) {
+    content = content.slice(1);
+  }
+  
+  const lines = content.split('\n').filter(line => line.trim() !== '');
+  return lines.map(line => {
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current.trim());
+    return values;
+  });
+};
+
+/**
+ * Update credits (participants and sponsors)
+ */
+function updateCredits() {
+  console.log('Updating credits...');
+  
+  if (!fs.existsSync(PARTICIPANTS_CSV) || !fs.existsSync(SPONSORS_CSV)) {
+    console.error('Error: CSV files not found.', { participants: PARTICIPANTS_CSV, sponsors: SPONSORS_CSV });
+    return;
+  }
+
+  const participantsData = parseCSV(PARTICIPANTS_CSV);
+  const sponsorsData = parseCSV(SPONSORS_CSV);
+
+  const participantHeader = participantsData[0];
+  const slotIndex = participantHeader.indexOf('参加枠名');
+  const nameIndex = participantHeader.indexOf('表示名');
+  const statusIndex = participantHeader.indexOf('参加ステータス');
+
+  if (slotIndex === -1 || nameIndex === -1 || statusIndex === -1) {
+    console.error('Error: Required columns not found in participants CSV.');
+    return;
+  }
+
+  // Process Participants (Grouped)
+  const participantsGroups = {};
+  participantsData.slice(1).forEach(row => {
+    const status = row[statusIndex];
+    if (status !== '参加') return;
+
+    let slot = row[slotIndex];
+    const name = row[nameIndex];
+
+    if (!name) return;
+
+    // Apply slot mapping from config
+    for (const [key, value] of Object.entries(scriptConfig.slotMappings)) {
+      slot = slot.replace(new RegExp(key, 'g'), value);
+    }
+    slot = slot.trim();
+
+    if (!participantsGroups[slot]) {
+      participantsGroups[slot] = [];
+    }
+    if (!participantsGroups[slot].includes(name)) {
+      participantsGroups[slot].push(name);
+    }
+  });
+
+  // Process Sponsors (Grouped)
+  const sponsorsGroups = {};
+  sponsorsData.slice(1).forEach(row => {
+    const rank = row[0];
+    let name = row[10]; // 掲載するお名前
+    if (!name || name === '') {
+      name = row[2]; // 表示名
+    }
+    
+    if (name && name !== '') {
+      if (!sponsorsGroups[rank]) {
+        sponsorsGroups[rank] = [];
+      }
+      sponsorsGroups[rank].push(name);
+    }
+  });
+
+  const result = {
+    participants: participantsGroups,
+    sponsors: sponsorsGroups
+  };
+
+  fs.writeFileSync(CREDITS_JSON, JSON.stringify(result, null, 2));
+  console.log(`Successfully updated ${CREDITS_JSON}`);
+}
+
+/**
+ * Update photos list and duration
+ */
+async function updateGeneratedData() {
+  console.log('Updating generated data (photos)...');
+  
+  let photos = [];
+
+  if (fs.existsSync(PHOTOS_DIR)) {
+    const files = fs.readdirSync(PHOTOS_DIR);
+    const photoData = await Promise.all(
+      files
+        .filter(f => /\.(jpg|jpeg|png|heic|heif|webp|avif|tiff|bmp)$/i.test(f))
+        .map(async f => {
+          const fullPath = path.join(PHOTOS_DIR, f);
+          let time = fs.statSync(fullPath).mtime.getTime();
+          try {
+            const exif = await exifr.parse(fullPath, {
+              pick: ['DateTimeOriginal', 'CreateDate'],
+            });
+            const captureDate = exif ? (exif.DateTimeOriginal || exif.CreateDate) : null;
+            if (captureDate) {
+              time = new Date(captureDate).getTime();
+            }
+          } catch (err) {}
+          return { name: f, time };
+        })
+    );
+    photoData.sort((a, b) => a.time - b.time);
+
+    const count = Math.min(MAX_PHOTOS, photoData.length);
+    for (let i = 0; i < count; i++) {
+      const index = Math.floor(i * (photoData.length / count));
+      photos.push(photoData[index].name);
+    }
+  } else {
+    console.warn(`Warning: Directory ${PHOTOS_DIR} not found.`);
+  }
+
+  let durationInFrames = 3000; // Default fallback
+  if (fs.existsSync(MP3_PATH)) {
+    try {
+      const output = execSync(`afinfo "${MP3_PATH}" | grep duration`).toString();
+      const match = output.match(/duration: ([\d.]+)/);
+      if (match) {
+        const durationSeconds = parseFloat(match[1]);
+        durationInFrames = Math.ceil((durationSeconds + BUFFER_SECONDS) * FPS);
+      }
+    } catch (err) {
+      console.error('Error calculating duration:', err.message);
+    }
+  } else {
+    console.warn(`Warning: MP3 file ${MP3_PATH} not found.`);
+  }
+
+  const generatedConfig = {
+    mediaPath: scriptConfig.mediaPath,
+    audioPath: scriptConfig.audioPath,
+    photos,
+    durationInFrames
+  };
+
+  fs.writeFileSync(GENERATED_CONFIG_JSON, JSON.stringify(generatedConfig, null, 2));
+  console.log(`Successfully updated ${GENERATED_CONFIG_JSON}`);
+}
+
+// Run all
+(async () => {
+  updateCredits();
+  await updateGeneratedData();
+})().catch(err => {
+  console.error('Fatal error during update:', err);
+  process.exit(1);
+});
