@@ -40,7 +40,7 @@ const creditItems: CreditItem[] = [
   ]),
 
   { type: 'spacer', height: 150 },
-  { type: 'header', text: '個人スポンサー' },
+  { type: 'header', text: (generatedConfig as any).sponsorHeader || 'スポンサー' },
   { type: 'spacer', height: 100 },
   ...Object.entries(credits.sponsors).reverse().flatMap(([rank, names]) => [
     { type: 'rank' as const, text: rank, large: true },

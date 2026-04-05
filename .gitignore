@@ -23,3 +23,7 @@ public/credit/*
 # Generated data
 src/credits.json
 src/generated-config.json
+
+# config
+src/generated-config.json
+scripts/config.json

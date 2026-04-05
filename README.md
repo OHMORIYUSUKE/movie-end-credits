@@ -51,24 +51,37 @@ npx remotion render EndCredits out.mp4
 
 ## 🛠️ カスタマイズ
 
-### 基本設定 (`scripts/config.json`)
-素材のパスや表示名の置換ルールを設定できます。
+### 1. 基本設定 (`scripts/config.json`)
+このファイルはプロジェクトの動作を決定する最も重要な設定ファイルです。Git管理対象外（`.gitignore`）のため、手動で作成してください。`scripts/config.example.json` をコピーして作成することをお勧めします。
 
-```json
-{
-  "mediaPath": "public/photos",           // 写真が置かれているディレクトリ
-  "audioPath": "public/music/end.mp3",    // 音楽ファイルのパス
-  "participantsCsv": "public/credit/...", // 参加者CSVのパス
-  "sponsorsCsv": "public/credit/...",     // スポンサーCSVのパス
-  "slotMappings": {                       // CSV内の参加枠名を画面表示用に置換
-    "一般参加枠": "一般参加",
-    "枠": ""
-  }
-}
+```bash
+cp scripts/config.example.json scripts/config.json
 ```
 
-### クレジット内容の微調整
-`npm run update-all` 実行後に生成される `src/credits.json` を直接編集することで、表示内容を細かく調整できます。
+- **`mediaPath`**: 写真を読み込むフォルダを指定します。
+- **`audioPath`**: 背景音楽のパスを指定します。この音楽の長さに合わせて動画の尺が自動計算されます。
+- **`participantsCsv`**: 一般参加者のリストが記載されたCSVのパスを指定します。
+- **`sponsorHeader`**: スポンサーセクションのタイトルの文字列を指定します（例: 「スポンサー」）。
+- **`sponsorsCsv`**: スポンサーのリストが記載されたCSVのパスを指定します。
+- **`slotMappings`**: CSV内の「参加枠名」を整理するために使用します。例えば「スタッフ枠（事前に指名された方のみ）」を単に「スタッフ」と表示させたい場合などに設定します。記号が含まれていても正確に一致すれば置換されます。
+
+### 2. 自動生成されるデータの編集
+`npm run update-all` を実行すると、以下の2つのファイルが `src/` ディレクトリに生成されます。これらを直接編集することで、細かい調整が可能です。
+
+#### `src/credits.json`（クレジット表示内容）
+CSVから抽出された参加者とスポンサーのリストです。
+- 誤字脱字の修正
+- 特定の人の削除
+- 表示順序の変更
+などは、このファイルを直接編集して保存してください。
+
+#### `src/generated-config.json`（メディア・動画設定）
+写真のリストや動画のフレーム数（尺）が記録されています。
+- **`photos`**: スライドショーに表示するファイル名のリストです。特定の写真を非表示にしたい場合は配列から削除してください。
+- **`durationInFrames`**: 動画の総フレーム数です。音楽の長さを変えずに動画だけを少し伸ばしたい場合などに調整します。
+
+> [!CAUTION]
+> `npm run update-all` を再実行すると、`src/credits.json` と `src/generated-config.json` は **上書きされます。** 手動で編集した内容は失われるため注意してください。
 
 ---
 

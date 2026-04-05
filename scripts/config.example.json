@@ -1,0 +1,11 @@
+{
+  "mediaPath": "public/photos",
+  "audioPath": "public/music/end.mp3",
+  "participantsCsv": "public/credit/participants.csv",
+  "sponsorHeader": "個人スポンサー",
+  "sponsorsCsv": "public/credit/sponsors.csv",
+  "slotMappings": {
+    "一般参加枠": "一般参加",
+    "スタッフ枠": "スタッフ"
+  }
+}

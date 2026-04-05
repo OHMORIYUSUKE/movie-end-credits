@@ -87,7 +87,7 @@ function updateCredits() {
 
     // Apply slot mapping from config
     for (const [key, value] of Object.entries(scriptConfig.slotMappings)) {
-      slot = slot.replace(new RegExp(key, 'g'), value);
+      slot = slot.split(key).join(value);
     }
     slot = slot.trim();
 
@@ -183,6 +183,7 @@ async function updateGeneratedData() {
   const generatedConfig = {
     mediaPath: scriptConfig.mediaPath,
     audioPath: scriptConfig.audioPath,
+    sponsorHeader: scriptConfig.sponsorHeader || "スポンサー",
     photos,
     durationInFrames
   };
