@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { styleText } = require('node:util');
 const { execSync } = require('child_process');
 const exifr = require('exifr');
 
@@ -161,7 +162,7 @@ async function updateGeneratedData() {
       photos.push(photoData[index].name);
     }
   } else {
-    console.warn(`Warning: Directory ${PHOTOS_DIR} not found.`);
+    console.warn(styleText('red', `Warning: Directory ${PHOTOS_DIR} not found.`));
   }
 
   let durationInFrames = 3000; // Default fallback
@@ -177,7 +178,7 @@ async function updateGeneratedData() {
       console.error('Error calculating duration:', err.message);
     }
   } else {
-    console.warn(`Warning: MP3 file ${MP3_PATH} not found.`);
+    console.warn(styleText('red', `Warning: MP3 file ${MP3_PATH} not found.`));
   }
 
   const generatedConfig = {
