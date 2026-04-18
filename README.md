@@ -3,7 +3,8 @@
 映画のエンドロール風の動画を作成する Remotion プロジェクトです。
 左側に写真のスライドショー（EXIFによる時系列ソート）、右側にスタッフロールがスクロール表示されます。
 
----
+<img width="1512" height="850" alt="image" src="https://github.com/user-attachments/assets/1b266882-3c80-4700-afaa-01c122191e35" />
+
 
 ## 🚀 クイックスタート
 
